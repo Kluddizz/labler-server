@@ -1,0 +1,23 @@
+= Labler
+
+== How to start
+To start the server just use `+node+`.
+
+[source,shell]
+----
+$ node index.js
+----
+
+If you are a developer, you can use `+nodemon+` to restart the server whenever you save a file.
+
+[source,shell]
+----
+$ nodemon index.js
+----
+
+You also could use the provided node script to start the server with `+nodemon+`.
+
+[source,shell]
+----
+$ npm start
+----
