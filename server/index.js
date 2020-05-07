@@ -19,7 +19,7 @@ const checkAuth = (req) => {
     throw new jwt.JsonWebTokenError();
   }
 
-  const secretKey = fs.readFileSync('secret.key');
+  const secretKey = fs.readFileSync('public.key');
   const token = req.headers.authorization.replace('Bearer ', '');
   const payload = jwt.verify(token, secretKey);
 
@@ -153,7 +153,7 @@ module.exports = {
 
   generateToken: (payload, secretKeyFile) => {
     const secretKey = fs.readFileSync(secretKeyFile);
-    const token = jwt.sign(payload, secretKey);
+    const token = jwt.sign(payload, secretKey, { algorithm: 'RS256' });
     return token;
   },
 

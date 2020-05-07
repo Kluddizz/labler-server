@@ -15,7 +15,7 @@ server.post('/auth/login', async (req, res) => {
 
   if (query.rows.length == 1) {
     const user = query.rows[0];
-    const token = server.generateToken({ username: user.username, email: user.email }, 'secret.key');
+    const token = server.generateToken({ username: user.username, email: user.email }, 'private.key');
 
     res.set(200, 'Authentication successful', { token: token });
   } else {
