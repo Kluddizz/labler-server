@@ -23,6 +23,17 @@ server.post('/auth/login', async (req, res) => {
   }
 });
 
+server.putAuth('/endpoint/groups', async (payload, req, res) => {
+	const { groupName, groupType } = req.body;
+
+	const query = await db.query(`
+		INSERT INTO image_groups (name, userId, categoryId)
+		VALUES ($1, $2, $3);
+	`, [groupName, payload.username, groupType]);
+
+	res.set(200, 'Created new image group');
+});
+
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
