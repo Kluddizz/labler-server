@@ -15,7 +15,7 @@ server.post('/auth/login', async (req, res) => {
 
   if (query.rows.length == 1) {
     const user = query.rows[0];
-    const token = server.generateToken({ username: user.username }, 'private.key');
+    const token = server.generateToken({ userId: user.id, username: user.username }, 'private.key');
 
     res.set(200, 'Authentication successful', { token: token });
   } else {
@@ -29,7 +29,7 @@ server.putAuth('/endpoint/groups', async (payload, req, res) => {
 	const query = await db.query(`
 		INSERT INTO image_groups (name, userId, categoryId)
 		VALUES ($1, $2, $3);
-	`, [groupName, payload.username, groupType]);
+	`, [groupName, payload.userId, groupType]);
 
 	res.set(200, 'Created new image group');
 });
