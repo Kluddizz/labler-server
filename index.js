@@ -34,6 +34,17 @@ server.putAuth('/endpoint/groups', async (payload, req, res) => {
 	res.set(200, 'Created new image group');
 });
 
+server.getAuth('/endpoint/groups', async (payload, req, res) => {
+	const query = await db.query(`
+		SELECT *
+		FROM image_groups
+		WHERE userId = $1
+		;
+	`, [payload.userId]);
+
+	res.set(200, 'Fetched all image groups of user', { groups: query.rows });
+});
+
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
