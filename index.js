@@ -45,6 +45,15 @@ server.getAuth('/endpoint/groups', async (payload, req, res) => {
 	res.set(200, 'Fetched all image groups of user', { groups: query.rows });
 });
 
+server.getAuth('/endpoint/categories', async (payload, req, res) => {
+	const query = await db.query(`
+		SELECT *
+		FROM categories;
+	`, []);
+
+	res.set(200, 'Fetched all available categories', { categories: query.rows });
+});
+
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
