@@ -67,7 +67,7 @@ server.getAuth('/endpoint/imageGroups/:imageGroupId', async (payload, req, res) 
 
 	if (query.rows.length === 1) {
 		const imageGroupName = query.rows[0].name;
-		res.set(200, 'Fetched image group', { name: imageGroupName, images: [] });
+		res.set(200, 'Fetched image group', { imageGroup: { name: imageGroupName, images: [] } });
 	} else {
 		res.set(400, 'Image group does not exist');
 	}
