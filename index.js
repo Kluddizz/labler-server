@@ -54,6 +54,25 @@ server.getAuth('/endpoint/categories', async (payload, req, res) => {
 	res.set(200, 'Fetched all available categories', { categories: query.rows });
 });
 
+server.getAuth('/endpoint/imageGroups/:imageGroupId', async (payload, req, res) => {
+	const { imageGroupId } = req.params;
+
+	const query = await db.query(`
+		SELECT *
+		FROM image_groups
+		WHERE userId = $1
+		      AND id = $2
+		;
+	`, [payload.userId, imageGroupId]);
+
+	if (query.rows.length === 1) {
+		const imageGroupName = query.rows[0].name;
+		res.set(200, 'Fetched image group', { name: imageGroupName, images: [] });
+	} else {
+		res.set(400, 'Image group does not exist');
+	}
+});
+
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
