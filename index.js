@@ -1,11 +1,16 @@
 const server = require('./server');
 const multer = require('multer');
+const shell = require('shelljs');
 const db = require('./db');
 const port = 5000;
 
 const storage = multer.diskStorage({
 	destination: (req, file, callback) => {
-		callback(null, './files');
+		const { imageGroupId } = req.params;
+		const dest = `./files/group${imageGroupId}`
+
+		shell.mkdir('-p', dest);
+		callback(null, dest);
 	},
 
 	filename: (req, file, callback) => {
@@ -86,17 +91,42 @@ server.getAuth('/endpoint/imageGroups/:imageGroupId', async (payload, req, res) 
 	}
 });
 
-server.post('/endpoint/imageGroups/:imageGroupId/images', async (req, res) => {
-	const err = await new Promise((resolve, reject) => {
-		upload(req, res, err => {
-			resolve(err);
-		});
-	});
+server.postAuth('/endpoint/imageGroups/:imageGroupId/images', async (payload, req, res) => {
+	const { imageGroupId } = req.params;
 
-	if (err) {
-		res.set(400, 'Could not upload files');
+	const query1 = await db.query(`
+		SELECT *
+		FROM image_groups
+		WHERE userid = $1
+					AND id = $2
+		;
+	`, [payload.userId, imageGroupId]);
+
+	if (query1.rows.length === 1) {
+		let files = [];
+
+		const err = await new Promise((resolve, reject) => {
+			upload(req, res, err => {
+				files = req.files;
+				resolve(err);
+			});
+		});
+
+		if (!err) {
+			for (const file of files) {
+					const query2 = await db.query(`
+						INSERT INTO images (name, filename, groupid)
+						VALUES ($1, $2, $3);
+					`, [file.originalname, file.path, imageGroupId]);
+
+					res.set(200, 'Uploaded files');
+			}
+		} else {
+			res.set(400, 'Could not upload files');
+		}
+
 	} else {
-		res.set(200, 'Uploaded files');
+		res.set(400, 'You are not allowed to do that');
 	}
 });
 
