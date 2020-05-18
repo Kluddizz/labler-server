@@ -1,13 +1,35 @@
-const server = require('./server');
-const multer = require('multer');
-const shell = require('shelljs');
-const db = require('./db');
+const express		 = require('express');
+const jwt 			 = require('express-jwt');
+const bodyParser = require('body-parser');
+const helmet     = require('helmet');
+const cors       = require('cors');
+const multer     = require('multer');
+const shell 	   = require('shelljs');
+const fs         = require('fs');
+const db 				 = require('./db');
+const jsonwebtoken = require('jsonwebtoken');
+
+const server = express();
 const port = 5000;
+const publicKey = fs.readFileSync('public.key');
+
+server.use(jwt({ secret: publicKey }).unless({ path: ['/auth/login'] }));
+server.use(express.static('files'));
+server.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
+server.use(bodyParser.json());
+server.use(helmet());
+server.use(cors());
+
+const generateToken = (secretKeyFile) => {
+	const secretKey = fs.readFileSync(secretKeyFile);
+	const token = jsonwebtoken.sign(secretKey, { algorithm: 'RS256' });
+	return token;
+};
 
 const storage = multer.diskStorage({
 	destination: (req, file, callback) => {
 		const { imageGroupId } = req.params;
-		const dest = `./files/group${imageGroupId}`
+		const dest = `./files/${imageGroupId}`
 
 		shell.mkdir('-p', dest);
 		callback(null, dest);
@@ -33,65 +55,101 @@ server.post('/auth/login', async (req, res) => {
 
   if (query.rows.length == 1) {
     const user = query.rows[0];
-    const token = server.generateToken({ userId: user.id, username: user.username }, 'private.key');
+    const token = generateToken({ id: user.id, username: user.username }, 'private.key');
 
-    res.set(200, 'Authentication successful', { token: token });
+		res.status(200).json({
+			success: true,
+			message: 'Authentication successful',
+			token: token
+		});
   } else {
-    res.set(403, 'Authentication failed');
+		res.status(403).json({
+			success: false,
+			message: 'Authentication failed'
+		});
   }
 });
 
-server.putAuth('/endpoint/groups', async (payload, req, res) => {
+server.put('/endpoint/groups', async (req, res) => {
 	const { groupName, groupType } = req.body;
 
 	const query = await db.query(`
 		INSERT INTO image_groups (name, userId, categoryId)
 		VALUES ($1, $2, $3);
-	`, [groupName, payload.userId, groupType]);
+	`, [groupName, req.user.id, groupType]);
 
-	res.set(200, 'Created new image group');
+	res.status(200).json({
+		success: true,
+		message: 'Created new image group'
+	});
 });
 
-server.getAuth('/endpoint/groups', async (payload, req, res) => {
+server.get('/endpoint/groups', async (req, res) => {
 	const query = await db.query(`
 		SELECT *
 		FROM image_groups
 		WHERE userId = $1
 		;
-	`, [payload.userId]);
+	`, [req.user.id]);
 
-	res.set(200, 'Fetched all image groups of user', { groups: query.rows });
+	res.status(200).json({
+		success: true,
+		message: 'Fetched all image groups of user',
+		groups: query.rows
+	});
 });
 
-server.getAuth('/endpoint/categories', async (payload, req, res) => {
+server.get('/endpoint/categories', async (req, res) => {
 	const query = await db.query(`
 		SELECT *
 		FROM categories;
 	`, []);
 
-	res.set(200, 'Fetched all available categories', { categories: query.rows });
+	res.status(200).json({
+		success: true,
+		message: 'Fetched all available categories',
+		categories: query.rows
+	});
 });
 
-server.getAuth('/endpoint/imageGroups/:imageGroupId', async (payload, req, res) => {
+server.get('/endpoint/imageGroups/:imageGroupId', async (req, res) => {
 	const { imageGroupId } = req.params;
 
-	const query = await db.query(`
+	const query1 = await db.query(`
 		SELECT *
 		FROM image_groups
 		WHERE userId = $1
 		      AND id = $2
 		;
-	`, [payload.userId, imageGroupId]);
+	`, [req.user.id, imageGroupId]);
 
-	if (query.rows.length === 1) {
-		const imageGroupName = query.rows[0].name;
-		res.set(200, 'Fetched image group', { imageGroup: { name: imageGroupName, images: [] } });
+	if (query1.rows.length === 1) {
+
+		const query2 = await db.query(`
+			SELECT *
+			FROM images
+			WHERE groupId = $1;
+		`, [imageGroupId]);
+
+		const imageGroupName = query1.rows[0].name;
+
+		res.status(200).json({
+			success: true,
+			message: 'Fetched image group', 
+			imageGroup: {
+				name: imageGroupName,
+				images: query2.rows
+			}
+		});
 	} else {
-		res.set(400, 'Image group does not exist');
+		res.status(400).json({
+			success: false,
+			message: 'Image group does not exist'
+		});
 	}
 });
 
-server.postAuth('/endpoint/imageGroups/:imageGroupId/images', async (payload, req, res) => {
+server.post('/endpoint/imageGroups/:imageGroupId/images', async (req, res) => {
 	const { imageGroupId } = req.params;
 
 	const query1 = await db.query(`
@@ -100,7 +158,7 @@ server.postAuth('/endpoint/imageGroups/:imageGroupId/images', async (payload, re
 		WHERE userid = $1
 					AND id = $2
 		;
-	`, [payload.userId, imageGroupId]);
+	`, [req.user.id, imageGroupId]);
 
 	if (query1.rows.length === 1) {
 		let files = [];
@@ -114,19 +172,28 @@ server.postAuth('/endpoint/imageGroups/:imageGroupId/images', async (payload, re
 
 		if (!err) {
 			for (const file of files) {
-					const query2 = await db.query(`
-						INSERT INTO images (name, filename, groupid)
-						VALUES ($1, $2, $3);
-					`, [file.originalname, file.path, imageGroupId]);
+				const query2 = await db.query(`
+					INSERT INTO images (name, filename, groupid)
+					VALUES ($1, $2, $3);
+				`, [file.originalname, file.path, imageGroupId]);
 
-					res.set(200, 'Uploaded files');
+				res.status(200).json({
+					success: true,
+					message: 'Uploaded files'
+				});
 			}
 		} else {
-			res.set(400, 'Could not upload files');
+			res.status(400).json({
+				success: false,
+				message: 'Could not upload files'
+			});
 		}
 
 	} else {
-		res.set(400, 'You are not allowed to do that');
+		res.status(400).json({
+			success: false,
+			message: 'You are not allowed to do this'
+		});
 	}
 });
 
