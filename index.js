@@ -1,6 +1,19 @@
 const server = require('./server');
+const multer = require('multer');
 const db = require('./db');
 const port = 5000;
+
+const storage = multer.diskStorage({
+	destination: (req, file, callback) => {
+		callback(null, './files');
+	},
+
+	filename: (req, file, callback) => {
+		callback(null, Date.now() + '_' + file.originalname);
+	}
+});
+
+const upload = multer({ storage: storage }).array('images');
 
 server.post('/auth/login', async (req, res) => {
 	const { username, password } = req.body;
@@ -70,6 +83,20 @@ server.getAuth('/endpoint/imageGroups/:imageGroupId', async (payload, req, res) 
 		res.set(200, 'Fetched image group', { imageGroup: { name: imageGroupName, images: [] } });
 	} else {
 		res.set(400, 'Image group does not exist');
+	}
+});
+
+server.post('/endpoint/imageGroups/:imageGroupId/images', async (req, res) => {
+	const err = await new Promise((resolve, reject) => {
+		upload(req, res, err => {
+			resolve(err);
+		});
+	});
+
+	if (err) {
+		res.set(400, 'Could not upload files');
+	} else {
+		res.set(200, 'Uploaded files');
 	}
 });
 

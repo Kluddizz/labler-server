@@ -9,7 +9,7 @@ const fs         = require('fs');
 const server = express();
 let debugMode = false;
 
-server.use(bodyParser.urlencoded({ extended: false }));
+server.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 server.use(bodyParser.json());
 server.use(helmet());
 server.use(cors());
