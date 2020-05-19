@@ -177,11 +177,12 @@ server.post('/endpoint/imageGroups/:imageGroupId/images', async (req, res) => {
 					VALUES ($1, $2, $3);
 				`, [file.originalname, file.path, imageGroupId]);
 
-				res.status(200).json({
-					success: true,
-					message: 'Uploaded files'
-				});
 			}
+
+			res.status(200).json({
+				success: true,
+				message: 'Uploaded files'
+			});
 		} else {
 			res.status(400).json({
 				success: false,
