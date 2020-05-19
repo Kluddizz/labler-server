@@ -13,16 +13,16 @@ const server = express();
 const port = 5000;
 const publicKey = fs.readFileSync('public.key');
 
-server.use(jwt({ secret: publicKey }).unless({ path: ['/auth/login'] }));
-server.use(express.static('files'));
+server.use('/endpoint', jwt({ secret: publicKey }));
+server.use('/files', express.static(__dirname + '/files'));
 server.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 server.use(bodyParser.json());
 server.use(helmet());
 server.use(cors());
 
-const generateToken = (secretKeyFile) => {
+const generateToken = (payload, secretKeyFile) => {
 	const secretKey = fs.readFileSync(secretKeyFile);
-	const token = jsonwebtoken.sign(secretKey, { algorithm: 'RS256' });
+	const token = jsonwebtoken.sign(payload, secretKey, { algorithm: 'RS256' });
 	return token;
 };
 
