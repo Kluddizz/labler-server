@@ -319,6 +319,160 @@ server.get("/endpoint/imageGroups/:imageGroupId/labels", async (req, res) => {
 	}
 });
 
+server.delete(
+	"/endpoint/imageGroups/:imageGroupId/labels/:labelId",
+	async (req, res) => {
+		const { imageGroupId, labelId } = req.params;
+
+		const query1 = await db.query(
+			`
+		SELECT *
+		FROM image_groups
+		WHERE userid = $1
+			    AND id = $2;
+	`,
+			[req.user.id, imageGroupId]
+		);
+
+		if (query1.rows.length > 0) {
+			const query2 = await db.query(
+				`
+			DELETE
+			FROM labels
+			WHERE id = $1;
+		`,
+				[labelId]
+			);
+
+			res.status(200).json({
+				success: true,
+				message: "Deleted label"
+			});
+		} else {
+			res.status(400).json({
+				success: false,
+				message: "You are not allowed to do this"
+			});
+		}
+	}
+);
+
+server.post(
+	"/endpoint/imageGroups/:imageGroupId/images/:imageId/labels/:labelId",
+	async (req, res) => {
+		const { imageGroupId, imageId, labelId } = req.params;
+		const { start, end } = req.body;
+
+		const query1 = await db.query(
+			`
+		SELECT *
+		FROM image_groups
+		WHERE userid = $1
+			    AND id = $2;
+	`,
+			[req.user.id, imageGroupId]
+		);
+
+		if (query1.rows.length > 0) {
+			const query2 = await db.query(
+				`
+				INSERT INTO labelings (startx, starty, endx, endy, labelid, imageid)
+				VALUES ($1, $2, $3, $4, $5, $6);
+		`,
+				[start.x, start.y, end.x, end.y, labelId, imageId]
+			);
+
+			res.status(200).json({
+				success: true,
+				message: "Labeled successfull"
+			});
+		} else {
+			res.status(400).json({
+				success: false,
+				message: "You are not allowed to do this"
+			});
+		}
+	}
+);
+
+server.delete(
+	"/endpoint/imageGroups/:imageGroupId/images/:imageId/labels/:labelingId",
+	async (req, res) => {
+		const { imageGroupId, imageId, labelingId } = req.params;
+
+		const query1 = await db.query(
+			`
+		SELECT *
+		FROM image_groups
+		WHERE userid = $1
+			    AND id = $2;
+	`,
+			[req.user.id, imageGroupId]
+		);
+
+		if (query1.rows.length > 0) {
+			const query2 = await db.query(
+				`
+				DELETE
+				FROM labelings
+				WHERE id = $1
+							AND imageid = $2;
+		`,
+				[labelingId, imageId]
+			);
+
+			res.status(200).json({
+				success: true,
+				message: "Deleted labeled section"
+			});
+		} else {
+			res.status(400).json({
+				success: false,
+				message: "You are not allowed to do this"
+			});
+		}
+	}
+);
+
+server.get(
+	"/endpoint/imageGroups/:imageGroupId/images/:imageId/labels",
+	async (req, res) => {
+		const { imageGroupId, imageId } = req.params;
+
+		const query1 = await db.query(
+			`
+		SELECT *
+		FROM image_groups
+		WHERE userid = $1
+			    AND id = $2;
+	`,
+			[req.user.id, imageGroupId]
+		);
+
+		if (query1.rows.length > 0) {
+			const query2 = await db.query(
+				`
+				SELECT *
+				FROM labelings
+				WHERE imageid = $1;
+		`,
+				[imageId]
+			);
+
+			res.status(200).json({
+				success: true,
+				message: "Fetched all labelings",
+				labelings: query2.rows
+			});
+		} else {
+			res.status(400).json({
+				success: false,
+				message: "You are not allowed to do this"
+			});
+		}
+	}
+);
+
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
