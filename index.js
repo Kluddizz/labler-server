@@ -96,9 +96,10 @@ server.put("/endpoint/groups", async (req, res) => {
 server.get("/endpoint/groups", async (req, res) => {
 	const query = await db.query(
 		`
-		SELECT *
+		SELECT image_groups.*,
+					 (SELECT filename FROM images WHERE images.groupId = image_groups.id LIMIT 1) AS thumbnail
 		FROM image_groups
-		WHERE userId = $1
+		WHERE image_groups.userId = $1
 		;
 	`,
 		[req.user.id]
@@ -152,13 +153,13 @@ server.get("/endpoint/imageGroups/:imageGroupId", async (req, res) => {
 			[imageGroupId]
 		);
 
-		const imageGroupName = query1.rows[0].name;
+		const { name } = query1.rows[0];
 
 		res.status(200).json({
 			success: true,
 			message: "Fetched image group",
 			imageGroup: {
-				name: imageGroupName,
+				name: name,
 				images: query2.rows
 			}
 		});
