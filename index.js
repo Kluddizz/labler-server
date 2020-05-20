@@ -198,6 +198,29 @@ server.post('/endpoint/imageGroups/:imageGroupId/images', async (req, res) => {
 	}
 });
 
+server.get('/endpoint/images/:imageId', async (req, res) => {
+	const { imageId } = req.params;
+
+	const query = await db.query(`
+		SELECT *
+		FROM images
+		WHERE id = $1;
+	`, [imageId]);
+
+	if (query.rows.length === 1) {
+		res.status(200).json({
+			success: true,
+			message: 'Fetched image',
+			image: query.rows[0]
+		});
+	} else {
+		res.status(400).json({
+			success: false,
+			message: 'There is no image with the given ID'
+		});
+	}
+});
+
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
