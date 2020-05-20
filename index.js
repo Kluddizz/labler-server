@@ -144,9 +144,10 @@ server.get("/endpoint/imageGroups/:imageGroupId", async (req, res) => {
 	if (query1.rows.length === 1) {
 		const query2 = await db.query(
 			`
-			SELECT *
+			SELECT images.*,
+						 (SELECT COUNT(*) FROM labelings WHERE labelings.imageid = images.id) :: INTEGER AS labelings
 			FROM images
-			WHERE groupId = $1;
+			WHERE images.groupId = $1;
 		`,
 			[imageGroupId]
 		);
