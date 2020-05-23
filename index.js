@@ -552,7 +552,14 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
 
 	// Create zip file
 	shell.exec(`cd ${folder} ; zip -r archive.zip ./*`, { silent: true }, () => {
-		res.download(`${__dirname}/${folder}/archive.zip`);
+		const filename = `${__dirname}/${folder}/archive.zip`;
+		const stream = fs.createReadStream(filename);
+
+		res.setHeader("Content-Type", "application/zip");
+		stream.pipe(res).once("close", () => {
+			stream.destroy();
+			shell.rm("-rf", folder);
+		});
 	});
 });
 
