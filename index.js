@@ -6,6 +6,8 @@ const cors = require("cors");
 const multer = require("multer");
 const shell = require("shelljs");
 const fs = require("fs");
+const path = require("path");
+const sizeOf = require("image-size");
 const db = require("./db");
 const jsonwebtoken = require("jsonwebtoken");
 
@@ -197,13 +199,21 @@ server.post("/endpoint/imageGroups/:imageGroupId/images", async (req, res) => {
 
 		if (!err) {
 			for (const file of files) {
-				const query2 = await db.query(
-					`
-					INSERT INTO images (name, filename, groupid)
-					VALUES ($1, $2, $3);
-				`,
-					[file.originalname, file.path, imageGroupId]
-				);
+				sizeOf(file.path, async (err, dimensions) => {
+					const query2 = await db.query(
+						`
+						INSERT INTO images (name, filename, groupid, width, height)
+						VALUES ($1, $2, $3, $4, $5);
+					`,
+						[
+							file.originalname,
+							file.path,
+							imageGroupId,
+							dimensions.width,
+							dimensions.height
+						]
+					);
+				});
 			}
 
 			res.status(200).json({
@@ -474,6 +484,77 @@ server.get(
 		}
 	}
 );
+
+server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
+	const { imageGroupId } = req.params;
+
+	// Create images folder
+	const folder = `./export/${imageGroupId}/${Date.now()}`;
+	shell.mkdir("-p", `${folder}/images`);
+	shell.mkdir("-p", `${folder}/labels`);
+	shell.cp("-r", `./files/${imageGroupId}/*`, `${folder}/images`);
+
+	const query1 = await db.query(
+		`
+		SELECT *
+		FROM labels
+		WHERE groupid = $1;
+	`,
+		[imageGroupId]
+	);
+
+	const query2 = await db.query(
+		`
+		SELECT *
+		FROM images
+		JOIN labelings
+			ON labelings.imageid = images.id
+		WHERE images.groupid = $1;
+	`,
+		[imageGroupId]
+	);
+
+	const query3 = await db.query(
+		`
+		SELECT *
+		FROM images
+		WHERE groupid = $1;
+	`,
+		[imageGroupId]
+	);
+
+	// Create class file
+	for (const label of query1.rows) {
+		fs.appendFileSync(`${folder}/classes.names`, `${label.name}\r\n`);
+	}
+
+	for (const labeling of query2.rows) {
+		const { dir, name } = path.parse(labeling.filename);
+		const labelIndex = query1.rows.findIndex(
+			label => label.id === labeling.labelid
+		);
+		const centerX = (labeling.endx + labeling.startx) / (2.0 * labeling.width);
+		const centerY = (labeling.endy + labeling.starty) / (2.0 * labeling.height);
+		const width = (labeling.endx - labeling.startx) / labeling.width;
+		const height = (labeling.endy - labeling.starty) / labeling.height;
+
+		fs.appendFileSync(
+			`${folder}/labels/${name}.txt`,
+			`${labelIndex} ${centerX} ${centerY} ${width} ${height}\r\n`
+		);
+	}
+
+	// Create data information file
+	for (const file of query3.rows) {
+		const { name, ext } = path.parse(file.filename);
+		fs.appendFileSync(`${folder}/data.txt`, `./images/${name}${ext}\r\n`);
+	}
+
+	// Create zip file
+	shell.exec(`cd ${folder} ; zip -r archive.zip ./*`, { silent: true }, () => {
+		res.download(`${__dirname}/${folder}/archive.zip`);
+	});
+});
 
 server.listen(port, () => {
 	console.log(`server running on port ${port}...`);
