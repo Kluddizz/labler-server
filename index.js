@@ -13,7 +13,7 @@ const jsonwebtoken = require("jsonwebtoken");
 
 const server = express();
 const port = 5000;
-const publicKey = fs.readFileSync("public.key");
+const publicKey = fs.readFileSync(`${__dirname}/public.key`);
 
 server.use("/endpoint", jwt({ secret: publicKey }));
 server.use("/files", express.static(__dirname + "/files"));
@@ -23,7 +23,7 @@ server.use(helmet());
 server.use(cors());
 
 const generateToken = (payload, secretKeyFile) => {
-	const secretKey = fs.readFileSync(secretKeyFile);
+	const secretKey = fs.readFileSync(`${__dirname}/${secretKeyFile}`);
 	const token = jsonwebtoken.sign(payload, secretKey, { algorithm: "RS256" });
 	return token;
 };
@@ -31,7 +31,7 @@ const generateToken = (payload, secretKeyFile) => {
 const storage = multer.diskStorage({
 	destination: (req, file, callback) => {
 		const { imageGroupId } = req.params;
-		const dest = `./files/${imageGroupId}`;
+		const dest = `${__dirname}/files/${imageGroupId}`;
 
 		shell.mkdir("-p", dest);
 		callback(null, dest);
@@ -489,10 +489,10 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
 	const { imageGroupId } = req.params;
 
 	// Create images folder
-	const folder = `./export/${imageGroupId}/${Date.now()}`;
+	const folder = `${__dirname}/export/${imageGroupId}/${Date.now()}`;
 	shell.mkdir("-p", `${folder}/images`);
 	shell.mkdir("-p", `${folder}/labels`);
-	shell.cp("-r", `./files/${imageGroupId}/*`, `${folder}/images`);
+	shell.cp("-r", `${__dirname}/files/${imageGroupId}/*`, `${folder}/images`);
 
 	const query1 = await db.query(
 		`

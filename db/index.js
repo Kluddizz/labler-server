@@ -2,7 +2,7 @@ const fs = require('fs');
 const { Pool } = require('pg');
 
 function connectionConfig() {
-  const raw = fs.readFileSync('postgres.json');
+  const raw = fs.readFileSync(`${__dirname}/../postgres.json`);
   return JSON.parse(raw);
 }
 
