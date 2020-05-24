@@ -560,16 +560,20 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
 	}
 
 	// Create zip file
-	shell.exec(`cd ${folder} ; zip -r archive.zip ./*`, { silent: true }, () => {
-		const filename = `${folder}/archive.zip`;
-		const stream = fs.createReadStream(filename);
+	shell.exec(
+		`cd ${folder} ; zip -r archive.zip ${folder}/*`,
+		{ silent: true },
+		() => {
+			const filename = `${folder}/archive.zip`;
+			const stream = fs.createReadStream(filename);
 
-		res.setHeader("Content-Type", "application/zip");
-		stream.pipe(res).once("close", () => {
-			stream.destroy();
-			shell.rm("-rf", folder);
-		});
-	});
+			res.setHeader("Content-Type", "application/zip");
+			stream.pipe(res).once("close", () => {
+				stream.destroy();
+				shell.rm("-rf", folder);
+			});
+		}
+	);
 });
 
 // ------------------------------------------------
