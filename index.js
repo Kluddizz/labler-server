@@ -562,7 +562,7 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
 	// Create zip file
 	shell.exec(
 		`cd ${folder} ; zip -r archive.zip ${folder}/*`,
-		{ silent: true },
+		{ silent: false },
 		() => {
 			const filename = `${folder}/archive.zip`;
 			const stream = fs.createReadStream(filename);
