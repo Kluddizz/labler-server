@@ -1,4 +1,5 @@
 const express = require("express");
+const https = require("https");
 const jwt = require("express-jwt");
 const bodyParser = require("body-parser");
 const helmet = require("helmet");
@@ -14,6 +15,14 @@ const jsonwebtoken = require("jsonwebtoken");
 const server = express();
 const port = 5000;
 const publicKey = fs.readFileSync(`${__dirname}/public.key`);
+
+const privateKey = fs.readFileSync(
+	"/etc/letsencrypt/live/volbyte.com/privkey.pem"
+);
+const certificate = fs.readFileSync(
+	"/etc/letsencrypt/live/volbyte.com/cert.pem"
+);
+const ca = fs.readFileSync("/etc/letsencrypt/live/volbyte.com/chain.pem");
 
 server.use("/endpoint", jwt({ secret: publicKey }));
 server.use("/files", express.static(__dirname + "/files"));
@@ -563,6 +572,15 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
 	});
 });
 
-server.listen(port, () => {
+// ------------------------------------------------
+
+const credentials = {
+	key: privateKey,
+	cert: certificate
+};
+
+const app = https.createServer(credentials, server);
+
+app.listen(port, () => {
 	console.log(`server running on port ${port}...`);
 });
