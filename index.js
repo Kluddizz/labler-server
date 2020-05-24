@@ -216,7 +216,7 @@ server.post("/endpoint/imageGroups/:imageGroupId/images", async (req, res) => {
 					`,
 						[
 							file.originalname,
-							file.path,
+							path.relative(__dirname, file.path),
 							imageGroupId,
 							dimensions.width,
 							dimensions.height
