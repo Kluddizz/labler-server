@@ -572,6 +572,42 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
 	});
 });
 
+server.delete("/endpoint/imageGroups/:imageGroupId", async (req, res) => {
+	const { imageGroupId } = req.params;
+
+	const query1 = await db.query(
+		`
+		SELECT *
+		FROM image_groups
+		WHERE userId = $1
+					AND id = $2
+		LIMIT 1;
+	`,
+		[req.user.id, imageGroupId]
+	);
+
+	if (query1.rows.length === 1) {
+		const query2 = await db.query(
+			`
+			DELETE
+			FROM image_groups
+			WHERE id = $1;
+		`,
+			[imageGroupId]
+		);
+
+		res.status(200).json({
+			success: true,
+			message: "Deleted image group"
+		});
+	} else {
+		res.status(400).json({
+			success: false,
+			message: "You are not allowed to delete this image group"
+		});
+	}
+});
+
 // ------------------------------------------------
 
 const credentials = {
