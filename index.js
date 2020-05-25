@@ -596,6 +596,8 @@ server.delete("/endpoint/imageGroups/:imageGroupId", async (req, res) => {
 			[imageGroupId]
 		);
 
+		shell.rm("-rf", `${__dirname}/files/${imageGroupId}`);
+
 		res.status(200).json({
 			success: true,
 			message: "Deleted image group"
