@@ -496,6 +496,7 @@ server.get(
 
 server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
   const { imageGroupId } = req.params;
+  const trainingRatio = 0.8;
 
   // Create images folder
   const folder = `${__dirname}/export/${imageGroupId}/${Date.now()}`;
@@ -554,14 +555,26 @@ server.get("/endpoint/imageGroups/:imageGroupId/export", async (req, res) => {
     );
   }
 
+  const numberTraining = parseInt(query3.rows.length * trainingRatio);
+
   // Create data information file
-  for (const file of query3.rows) {
+  for (let i = 0; i < query3.rows.length; i++) {
+    const file = query3.rows[i];
     const { name, ext } = path.parse(file.filename);
-    fs.appendFileSync(
-      `${folder}/data.txt`,
-      `data/images/${name}${ext}\r\n`,
-      "utf8"
-    );
+
+    if (i < numberTraining) {
+      fs.appendFileSync(
+        `${folder}/train.txt`,
+        `data/images/${name}${ext}\r\n`,
+        "utf8"
+      );
+    } else {
+      fs.appendFileSync(
+        `${folder}/test.txt`,
+        `data/images/${name}${ext}\r\n`,
+        "utf8"
+      );
+    }
   }
 
   // Create zip file
