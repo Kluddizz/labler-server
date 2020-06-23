@@ -1,3 +1,5 @@
+process.env["NODE_CONFIG_DIR"] = __dirname + "/config/";
+
 const express = require("express");
 const https = require("https");
 const jwt = require("express-jwt");
