@@ -624,13 +624,9 @@ server.delete("/endpoint/imageGroups/:imageGroupId", async (req, res) => {
 // ------------------------------------------------
 
 if (process.env.NODE_ENV === "production") {
-  const privateKey = fs.readFileSync(config.privateKey);
-  const certificate = fs.readFileSync(config.certificate);
-  const ca = fs.readFileSync(config.ca);
-
   const credentials = {
-    key: privateKey,
-    cert: certificate
+    key: fs.readFileSync(config.privateKey),
+    cert: fs.readFileSync(config.certificate)
   };
 
   const app = https.createServer(credentials, server);
