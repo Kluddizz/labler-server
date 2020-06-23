@@ -1,0 +1,9 @@
+{
+  "server": {
+    "port": 5000,
+    "publicKey": "public.key",
+    "privateKey": "/etc/letsencrypt/live/volbyte.com/privkey.pem",
+    "certificate": "/etc/letsencrypt/live/volbyte.com/cert.pem",
+    "ca": "/etc/letsencrypt/live/volbyte.com/chain.pem"
+  }
+}

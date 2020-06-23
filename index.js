@@ -11,18 +11,11 @@ const path = require("path");
 const sizeOf = require("image-size");
 const db = require("./db");
 const jsonwebtoken = require("jsonwebtoken");
+const cfg = require("config");
 
+const config = cfg.get("server");
 const server = express();
-const port = 5000;
-const publicKey = fs.readFileSync(`${__dirname}/public.key`);
-
-const privateKey = fs.readFileSync(
-  "/etc/letsencrypt/live/volbyte.com/privkey.pem"
-);
-const certificate = fs.readFileSync(
-  "/etc/letsencrypt/live/volbyte.com/cert.pem"
-);
-const ca = fs.readFileSync("/etc/letsencrypt/live/volbyte.com/chain.pem");
+const publicKey = fs.readFileSync(config.publicKey);
 
 server.use("/endpoint", jwt({ secret: publicKey }));
 server.use("/files", express.static(__dirname + "/files"));
@@ -630,13 +623,23 @@ server.delete("/endpoint/imageGroups/:imageGroupId", async (req, res) => {
 
 // ------------------------------------------------
 
-const credentials = {
-  key: privateKey,
-  cert: certificate
-};
+if (process.env.NODE_ENV === "production") {
+  const privateKey = fs.readFileSync(config.privateKey);
+  const certificate = fs.readFileSync(config.certificate);
+  const ca = fs.readFileSync(config.ca);
 
-const app = https.createServer(credentials, server);
+  const credentials = {
+    key: privateKey,
+    cert: certificate
+  };
 
-app.listen(port, () => {
-  console.log(`server running on port ${port}...`);
-});
+  const app = https.createServer(credentials, server);
+
+  app.listen(config.port, () => {
+    console.log(`server running on port ${config.port}...`);
+  });
+} else {
+  server.listen(config.port, () => {
+    console.log(`server running in development mode on port ${config.port}`);
+  });
+}
