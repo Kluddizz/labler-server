@@ -17,7 +17,7 @@ const cfg = require("config");
 
 const config = cfg.get("server");
 const server = express();
-const publicKey = fs.readFileSync(config.publicKey);
+const publicKey = fs.readFileSync(`${__dirname}/${config.publicKey}`);
 
 server.use("/endpoint", jwt({ secret: publicKey }));
 server.use("/files", express.static(__dirname + "/files"));
